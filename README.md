@@ -14,10 +14,10 @@ Work in progress!
 * `Ctrl` + `W` - Close the current tab.
 * `Tab` - Cycle through the opened tabs.
 * `<F1>` - Display help menu.
-* `j` / `&#8595;` - Move down the list.
-* `k` / `&#8593;` - Move up the list.
-* `h` / `&#8592;` - Move to the left pane.
-* `l` / `&#8594;` - Move to the right pane.
+* `j` / **&#8595;** - Move down the list.
+* `k` / **&#8593;** - Move up the list.
+* `h` / **&#8592;** - Move to the left pane.
+* `l` / **&#8594;** - Move to the right pane.
 
 ## Building and running
 

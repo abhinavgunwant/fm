@@ -1,4 +1,6 @@
 use std::{ path::PathBuf, rc::Rc };
+
+use chrono::{ DateTime, Local };
 use crate::fs::dir_contents::DirectoryContents;
 
 pub struct Panel {
@@ -8,6 +10,7 @@ pub struct Panel {
     // This is the index of the item at the top
     pub list_start_index: u32,
     pub current_dir_content: Rc<DirectoryContents>,
+    pub last_updated: DateTime<Local>,
 }
 
 pub struct Tab {
@@ -15,10 +18,16 @@ pub struct Tab {
     pub current_panel: usize,
 }
 
+pub enum BottomLineContent {
+    HelpText,
+    RefreshedAt,
+}
+
 pub struct State {
     pub show_help_menu: bool,
     pub current_tab: usize,
     pub tabs: Vec<Tab>,
+    pub bottom_line_content: BottomLineContent,
 }
 
 impl Panel {
@@ -37,6 +46,7 @@ impl Panel {
             row: 0,
             list_start_index: 0,
             current_dir_content: Rc::new(DirectoryContents::default()),
+            last_updated: Local::now(),
         }
     }
 
@@ -45,7 +55,8 @@ impl Panel {
             current_path: path.clone(),
             row: 0,
             list_start_index: 0,
-            current_dir_content: Rc::new(DirectoryContents::default())
+            current_dir_content: Rc::new(DirectoryContents::default()),
+            last_updated: Local::now(),
         }
     }
 }
@@ -76,6 +87,7 @@ impl State {
             show_help_menu: false,
             current_tab: 0,
             tabs,
+            bottom_line_content: BottomLineContent::HelpText,
         }
     }
 }

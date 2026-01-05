@@ -1,5 +1,6 @@
 use std::rc::Rc;
 
+use chrono::Local;
 use ratatui::{layout::{Constraint, Rect}, style::Color, text::Text, Frame};
 
 use crate::{ fs::{dir_contents::DirectoryContents, get_dir_contents}, state::{ Panel, Tab }, ui::utils::{ get_layout_h, get_style, get_style_fg } };
@@ -93,6 +94,7 @@ pub fn draw_panel_content(frame: &mut Frame, panel: &mut Panel, original_rect: R
     } else {
         contents = Rc::new(get_dir_contents(panel.current_path.clone()));
         panel.current_dir_content = contents.clone();
+        panel.last_updated = Local::now();
     };
 
     let last_index = panel.list_start_index + original_rect.height as u32 - 1;

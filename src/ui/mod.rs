@@ -2,42 +2,60 @@ mod help;
 mod utils;
 mod content;
 
-use std::rc::Rc;
+use chrono::{ DateTime, Local, Timelike };
 
 use ratatui:: {
     layout::{Constraint, Rect}, style::{Color, Style}, text::Text, Frame,
 };
 
 use crate::{
-    fs::{ dir_contents::DirectoryContents, get_dir_contents },
-    state::{ State, Tab },
+    state::{ BottomLineContent, State, Tab },
     ui::{
-        help::draw_help_menu,
-        utils::{ get_style, get_style_fg, get_layout_h, get_layout_v },
-        content::{ draw_tab_line, draw_tab_content },
+        content::{ draw_tab_content, draw_tab_line }, help::draw_help_menu, utils::{ get_layout_h, get_layout_v, get_style, get_style_fg }
     },
 };
 
-fn draw_bottom_line(frame: &mut Frame, area: Rect) {
+fn draw_bottom_line(frame: &mut Frame, area: Rect, state: &mut State) {
     let title_style = get_style(Color::Yellow, Color::Black);
 
     let bottom_chunk = get_layout_h(
-        [ Constraint::Percentage(33), Constraint::Fill(1) ].as_ref(),
+        [ Constraint::Length(20), Constraint::Fill(1) ].as_ref(),
         area,
     );
 
-    let help_chunks = get_layout_h(
+    let status_chunks = get_layout_h(
         [ Constraint::Percentage(50), Constraint::Fill(1) ].as_ref(),
         bottom_chunk[1],
     );
 
-    let title_text = Text::styled("fm: File Manager", title_style);
-    let help_text = Text::styled("F1: Open help menu", Style::default());
-    let exit_text = Text::styled("<Ctrl> + Q: Exit", Style::default());
+    let title_text = Text::styled(" fm: File Manager", title_style);
+
+    match state.bottom_line_content {
+        BottomLineContent::HelpText => {
+            let help_text = Text::styled("F1: Open help menu", Style::default());
+            let exit_text = Text::styled("<Ctrl> + Q: Exit", Style::default());
+
+            frame.render_widget(help_text, status_chunks[0]);
+            frame.render_widget(exit_text, status_chunks[1]);
+        }
+
+        BottomLineContent::RefreshedAt => {
+            if let Some(active_tab) = state.tabs.get(state.current_tab) {
+                if let Some(active_panel) = active_tab.panels.get(active_tab.current_panel) {
+                    let date_time: DateTime<Local> = active_panel.last_updated;
+                    let hours = date_time.hour();
+                    let minutes = date_time.minute();
+                    let seconds = date_time.second();
+
+                    let refresh_text = Text::from(format!("Refreshed at: {:02}:{:02}:{:02}", hours, minutes, seconds));
+                    frame.render_widget(refresh_text, bottom_chunk[1]);
+                }
+            }
+        }
+    }
+
 
     frame.render_widget(title_text, bottom_chunk[0]);
-    frame.render_widget(help_text, help_chunks[0]);
-    frame.render_widget(exit_text, help_chunks[1]);
 }
 
 pub fn draw(frame: &mut Frame, state: &mut State) {
@@ -51,7 +69,7 @@ pub fn draw(frame: &mut Frame, state: &mut State) {
         frame.area(),
     );
 
-    draw_bottom_line(frame, outer_chunks[1]);
+    draw_bottom_line(frame, outer_chunks[1], state);
 
     let content_chunk: Rect;
 

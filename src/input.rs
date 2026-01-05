@@ -1,6 +1,9 @@
+use std::rc::Rc;
+
+use chrono::Local;
 use crossterm::event::{read, Event, KeyCode, KeyEventKind, KeyModifiers};
 
-use crate::state::{Panel, State, Tab};
+use crate::{fs::get_dir_contents, state::{BottomLineContent, Panel, State, Tab}};
 
 pub fn process_input(state: &mut State) -> bool {
     match read() {
@@ -23,6 +26,14 @@ pub fn process_input(state: &mut State) -> bool {
 
                     KeyCode::F(1) => {
                         state.show_help_menu = true;
+                    }
+
+                    KeyCode::F(5) => {
+                        if Local::now().timestamp_millis() - current_panel.last_updated.timestamp_millis() > 250 {
+                            current_panel.current_dir_content = Rc::new(get_dir_contents(current_panel.current_path.clone()));
+                            current_panel.last_updated = Local::now();
+                            state.bottom_line_content = BottomLineContent::RefreshedAt;
+                        }
                     }
 
                     KeyCode::Char('q') => {

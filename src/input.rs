@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::{ rc::Rc, cell::RefCell };
 
 use chrono::Local;
 use crossterm::event::{ read, Event, KeyCode, KeyEventKind, KeyModifiers };
@@ -11,7 +11,7 @@ use crate::{
 pub fn refresh_panel(state: &mut State) {
     if let Some(tab) = state.tabs.get_mut(state.current_tab) {
         if let Some(panel) = tab.panels.get_mut(tab.current_panel) {
-            panel.current_dir_content = Rc::new(get_dir_contents(panel.current_path.clone()));
+            panel.current_dir_content = Rc::new(RefCell::new(get_dir_contents(panel.current_path.clone())));
             panel.last_updated = Local::now();
             state.bottom_line_content = BottomLineContent::RefreshedAt;
         }
@@ -123,7 +123,7 @@ pub fn process_input(state: &mut State) -> bool {
                     }
 
                     KeyCode::Char('j') | KeyCode::Down => {
-                        let files_len = current_panel.current_dir_content.files.len();
+                        let files_len = current_panel.current_dir_content.borrow().files.len();
 
                         if files_len > 0 && current_panel.row < files_len as u32 - 1 {
                             current_panel.row += 1;
@@ -138,7 +138,7 @@ pub fn process_input(state: &mut State) -> bool {
 
                     KeyCode::Char('o') => {
                         if ctrl {
-                            let entry = current_panel.current_dir_content.files[current_panel.row as usize].clone();
+                            let entry = current_panel.current_dir_content.borrow().files[current_panel.row as usize].clone();
                             if entry.is_directory() {
                                 let mut p = current_panel.current_path.clone();
                                 p.push(entry.name);
@@ -151,7 +151,7 @@ pub fn process_input(state: &mut State) -> bool {
 
                     KeyCode::Char('p') => {
                         if ctrl {
-                            let entry = current_panel.current_dir_content.files[current_panel.row as usize].clone();
+                            let entry = current_panel.current_dir_content.borrow().files[current_panel.row as usize].clone();
                             if entry.is_directory() {
                                 let mut p = current_panel.current_path.clone();
                                 p.push(entry.name);
@@ -180,12 +180,18 @@ pub fn process_input(state: &mut State) -> bool {
                         }
                     }
 
+                    KeyCode::Char('m') => {
+                        if let Some(file) = current_panel.current_dir_content.borrow_mut().files.get_mut(current_panel.row as usize) {
+                            file.set_marked(!file.is_marked());
+                        }
+                    }
+
                     KeyCode::Tab => {
                         state.current_tab = (state.current_tab + 1) % state.tabs.len();
                     }
 
                     KeyCode::Enter => {
-                        let entry = current_panel.current_dir_content.files[current_panel.row as usize].clone();
+                        let entry = current_panel.current_dir_content.borrow().files[current_panel.row as usize].clone();
 
                         if entry.is_directory() {
                             current_panel.current_path.push(entry.name);

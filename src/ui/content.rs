@@ -1,10 +1,10 @@
-use std::rc::Rc;
+use std::{ rc::Rc, cell::RefCell };
 
 use chrono::Local;
-use ratatui::{ layout::{ Constraint, Rect }, style::Color, text::Text, Frame };
+use ratatui::{ layout::{ Constraint, Rect }, style::{ Color, Style }, text::Text, Frame };
 
 use crate::{
-    fs::{ dir_contents::DirectoryContents, get_dir_contents },
+    fs::{ dir_contents::{DirectoryContents, DirectoryEntry}, get_dir_contents },
     state::{ Panel, Tab },
     ui::utils::{ get_layout_h, get_style, get_style_fg }
 };
@@ -87,20 +87,15 @@ pub fn draw_tab_content(frame: &mut Frame, tab: &mut Tab, rect: Rect) {
 }
 
 pub fn draw_panel_content(frame: &mut Frame, panel: &mut Panel, original_rect: Rect) {
-    let dir_style = get_style_fg(Color::Yellow);
-    let dir_style_selected = get_style(Color::Black, Color::Yellow);
-    let file_style = get_style_fg(Color::Blue);
-    let file_style_selected = get_style(Color::Black, Color::Blue);
-
     let mut rect: Rect = original_rect.clone();
     rect.height = 1;
 
-    let contents: Rc<DirectoryContents>;
+    let contents: Rc<RefCell<DirectoryContents>>;
 
-    if panel.current_path == panel.current_dir_content.path {
+    if panel.current_path == panel.current_dir_content.borrow().path {
         contents = panel.current_dir_content.clone();
     } else {
-        contents = Rc::new(get_dir_contents(panel.current_path.clone()));
+        contents = Rc::new(RefCell::new(get_dir_contents(panel.current_path.clone())));
         panel.current_dir_content = contents.clone();
         panel.last_updated = Local::now();
     };
@@ -115,26 +110,41 @@ pub fn draw_panel_content(frame: &mut Frame, panel: &mut Panel, original_rect: R
 
     let mut items_displayed: usize = 0;
 
-    for (i, content) in contents.files.iter().enumerate() {
+    for (i, content) in contents.borrow().files.iter().enumerate() {
         if i < panel.list_start_index as usize {
             continue;
         }
 
-        let entry;
+        let entry = {
+            let name: String;
+            let style: Style;
 
-        if content.is_directory() {
-            entry = if i == panel.row as usize {
-                Text::styled(format!("\u{f4d3} {}", content.name.clone()), dir_style_selected)
+            if content.is_directory() {
+                name = format!(" \u{f4d3} {}", content.name.clone());
             } else {
-                Text::styled(format!("\u{f4d3} {}", content.name.clone()), dir_style)
-            };
-        } else {
-            entry = if i == panel.row as usize {
-                Text::styled(format!("\u{f15b} {}", content.name.clone()), file_style_selected)
+                name = format!(" \u{f15b} {}", content.name.clone());
+            }
+
+            if i == panel.row as usize {
+                if content.is_directory() {
+                    style = get_style(Color::Black, Color::Yellow);
+                } else {
+                    style = get_style(Color::Black, Color::Blue);
+                }
             } else {
-                Text::styled(format!("\u{f15b} {}", content.name.clone()), file_style)
-            };
-        }
+                if content.is_marked() {
+                    style = get_style(Color::Black, Color::Gray);
+                } else {
+                    if content.is_directory() {
+                        style = get_style_fg(Color::Yellow);
+                    } else {
+                        style = get_style_fg(Color::Blue);
+                    }
+                }
+            }
+
+            Text::styled(name, style)
+        };
 
         frame.render_widget(entry, rect);
         rect.y += 1;

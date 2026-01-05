@@ -1,4 +1,4 @@
-use std::{ path::PathBuf, rc::Rc };
+use std::{ path::PathBuf, rc::Rc, cell::RefCell };
 
 use chrono::{ DateTime, Local };
 use crate::fs::dir_contents::DirectoryContents;
@@ -9,7 +9,7 @@ pub struct Panel {
 
     // This is the index of the item at the top
     pub list_start_index: u32,
-    pub current_dir_content: Rc<DirectoryContents>,
+    pub current_dir_content: Rc<RefCell<DirectoryContents>>,
     pub last_updated: DateTime<Local>,
 }
 
@@ -61,7 +61,7 @@ impl Panel {
             current_path: current_path.clone(),
             row: 0,
             list_start_index: 0,
-            current_dir_content: Rc::new(DirectoryContents::default()),
+            current_dir_content: Rc::new(RefCell::new(DirectoryContents::default())),
             last_updated: Local::now(),
         }
     }
@@ -71,7 +71,7 @@ impl Panel {
             current_path: path.clone(),
             row: 0,
             list_start_index: 0,
-            current_dir_content: Rc::new(DirectoryContents::default()),
+            current_dir_content: Rc::new(RefCell::new(DirectoryContents::default())),
             last_updated: Local::now(),
         }
     }

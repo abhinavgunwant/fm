@@ -6,14 +6,16 @@ Work in progress!
 
 ## Shortcuts and keybinds
 
-* `Enter` - Enter the directory. Or open the file using system-default program.
+* `Enter` - Enter the directory. Or open the file using the system-default program.
 * `Backspace` - Go to the parent directory.
 * `Ctrl` + `O` - Open directory in a new tab.
 * `Ctrl` + `P` - Open directory in a new panel (within the current tab).
 * `Ctrl` + `Q` - Exit the program.
 * `Ctrl` + `W` - Close the current tab.
+* `Ctrl` + `N` - Create new file/directory.
 * `Tab` - Cycle through the opened tabs.
 * `<F1>` - Display help menu.
+* `<F5>` - Refresh the active panel.
 * `j` / **&#8595;** - Move down the list.
 * `k` / **&#8593;** - Move up the list.
 * `h` / **&#8592;** - Move to the left pane.

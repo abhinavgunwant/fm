@@ -1,17 +1,21 @@
 mod help;
 mod utils;
 mod content;
+mod prompt;
 
 use chrono::{ DateTime, Local, Timelike };
 
+use prompt::draw_prompt;
 use ratatui:: {
     layout::{Constraint, Rect}, style::{Color, Style}, text::Text, Frame,
 };
 
 use crate::{
-    state::{ BottomLineContent, State, Tab },
+    state::{ BottomLineContent, State, Tab, UserInput },
     ui::{
-        content::{ draw_tab_content, draw_tab_line }, help::draw_help_menu, utils::{ get_layout_h, get_layout_v, get_style, get_style_fg }
+        content::{ draw_tab_content, draw_tab_line },
+        utils::{ get_layout_h, get_layout_v, get_style },
+        help::draw_help_menu,
     },
 };
 
@@ -115,5 +119,9 @@ pub fn draw(frame: &mut Frame, state: &mut State) {
 
     let current_tab: &mut Tab = state.tabs.get_mut(state.current_tab).unwrap();
     draw_tab_content(frame, current_tab, content_chunk);
+
+    if state.user_input != UserInput::None {
+        draw_prompt(frame, content_chunk, state);
+    }
 }
 

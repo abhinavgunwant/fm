@@ -1,8 +1,9 @@
 //! This module deals with the file system.
 
 pub mod dir_contents;
+pub mod create;
 
-use std::{ path::PathBuf, rc::Rc };
+use std::path::PathBuf;
 use crate::fs::dir_contents::{ DirectoryEntry, DirectoryContents };
 
 pub fn get_dir_contents(p: PathBuf) -> DirectoryContents {
@@ -62,6 +63,7 @@ pub fn test_get_dir_contents() {
     let path_buf = PathBuf::from("C:\\Users\\abhig\\Projects\\3D");
     let dc = get_dir_contents(path_buf);
 
+    use std::rc::Rc;
     let rc_dc: Rc<DirectoryContents> = Rc::new(dc);
 
     for (i, content) in rc_dc.files.iter().enumerate() {

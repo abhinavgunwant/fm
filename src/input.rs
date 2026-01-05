@@ -1,9 +1,22 @@
 use std::rc::Rc;
 
 use chrono::Local;
-use crossterm::event::{read, Event, KeyCode, KeyEventKind, KeyModifiers};
+use crossterm::event::{ read, Event, KeyCode, KeyEventKind, KeyModifiers };
 
-use crate::{fs::get_dir_contents, state::{BottomLineContent, Panel, State, Tab}};
+use crate::{
+    fs::{ create::create_content, get_dir_contents },
+    state::{ BottomLineContent, Panel, State, Tab, UserInput }
+};
+
+pub fn refresh_panel(state: &mut State) {
+    if let Some(tab) = state.tabs.get_mut(state.current_tab) {
+        if let Some(panel) = tab.panels.get_mut(tab.current_panel) {
+            panel.current_dir_content = Rc::new(get_dir_contents(panel.current_path.clone()));
+            panel.last_updated = Local::now();
+            state.bottom_line_content = BottomLineContent::RefreshedAt;
+        }
+    }
+}
 
 pub fn process_input(state: &mut State) -> bool {
     match read() {
@@ -15,6 +28,75 @@ pub fn process_input(state: &mut State) -> bool {
             let current_panel = current_tab.panels.get_mut(current_tab.current_panel).unwrap();
 
             if key_event.kind == KeyEventKind::Press {
+                {
+                    let user_input = &mut state.user_input;
+
+                    match user_input {
+                        UserInput::None => {}
+
+                        UserInput::NewDirectory(name, pos) => {
+                            match key_event.code {
+                                KeyCode::Char(c) => {
+                                    if c == 'q' && ctrl {
+                                        return true;
+                                    }
+                                    name.insert(*pos as usize, c);
+                                    *pos += 1;
+                                }
+
+                                KeyCode::Backspace => {
+                                    if *pos > 0 {
+                                        *pos -= 1;
+                                        name.remove(*pos as usize);
+                                    }
+                                }
+
+                                KeyCode::Delete => {
+                                    if *pos < name.len() as u16 {
+                                        name.remove(*pos as usize);
+                                    }
+                                }
+
+                                KeyCode::Left => {
+                                    if *pos > 0 {
+                                        *pos -= 1;
+                                    }
+                                }
+
+                                KeyCode::Right => {
+                                    if (*pos as usize) < name.len() {
+                                        *pos += 1;
+                                    }
+                                }
+
+                                KeyCode::Home => { *pos = 0; }
+                                KeyCode::End => { *pos = name.len() as u16; }
+                                KeyCode::Esc => { state.user_input = UserInput::None; }
+
+                                KeyCode::Enter => {
+                                    if let Err(err_string) = create_content(current_panel.current_path.clone(), name.clone()) {
+                                        state.user_input = UserInput::Error(err_string);
+                                    } else {
+                                        state.user_input = UserInput::None;
+                                    }
+
+                                    refresh_panel(state);
+                                }
+
+                                _ => {}
+                            }
+
+                            return false;
+                        }
+
+                        UserInput::Error(_err_str) => {
+                            if let KeyCode::Enter = key_event.code {
+                                state.user_input = UserInput::None;
+                            }
+                        }
+                    }
+                }
+
                 match key_event.code {
                     KeyCode::Esc => {
                         if state.show_help_menu {
@@ -30,9 +112,7 @@ pub fn process_input(state: &mut State) -> bool {
 
                     KeyCode::F(5) => {
                         if Local::now().timestamp_millis() - current_panel.last_updated.timestamp_millis() > 250 {
-                            current_panel.current_dir_content = Rc::new(get_dir_contents(current_panel.current_path.clone()));
-                            current_panel.last_updated = Local::now();
-                            state.bottom_line_content = BottomLineContent::RefreshedAt;
+                            refresh_panel(state);
                         }
                     }
 
@@ -43,7 +123,9 @@ pub fn process_input(state: &mut State) -> bool {
                     }
 
                     KeyCode::Char('j') | KeyCode::Down => {
-                        if current_panel.row < current_panel.current_dir_content.files.len() as u32 - 1 {
+                        let files_len = current_panel.current_dir_content.files.len();
+
+                        if files_len > 0 && current_panel.row < files_len as u32 - 1 {
                             current_panel.row += 1;
                         }
                     }
@@ -89,6 +171,12 @@ pub fn process_input(state: &mut State) -> bool {
                             } else {
                                 std::process::exit(0);
                             }
+                        }
+                    }
+
+                    KeyCode::Char('n') => {
+                        if ctrl {
+                            state.user_input = UserInput::NewDirectory(String::default(), 0);
                         }
                     }
 

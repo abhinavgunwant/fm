@@ -1,9 +1,37 @@
 use std::rc::Rc;
 
 use chrono::Local;
-use ratatui::{layout::{Constraint, Rect}, style::Color, text::Text, Frame};
+use ratatui::{ layout::{ Constraint, Rect }, style::Color, text::Text, Frame };
 
-use crate::{ fs::{dir_contents::DirectoryContents, get_dir_contents}, state::{ Panel, Tab }, ui::utils::{ get_layout_h, get_style, get_style_fg } };
+use crate::{
+    fs::{ dir_contents::DirectoryContents, get_dir_contents },
+    state::{ Panel, Tab },
+    ui::utils::{ get_layout_h, get_style, get_style_fg }
+};
+
+pub fn get_panel_chunks(panels: &Vec<Panel>, rect: Rect) -> Rc<[Rect]> {
+    let mut tab_panel_constraints: Vec<Constraint> = Vec::with_capacity(2);
+
+    let total_panels = panels.len();
+    let percent = (1.0f32/(total_panels as f32) * 100.0f32) as u16;
+
+    let mut last_increment = 0;
+
+    if percent * (total_panels as u16) != 100 {
+        last_increment = 100 - percent * (total_panels as u16);
+    }
+
+    for i in 0..total_panels {
+        if i == total_panels - 1 {
+            tab_panel_constraints.push(Constraint::Percentage(percent + last_increment));
+            continue;
+        }
+
+        tab_panel_constraints.push(Constraint::Percentage(percent));
+    }
+
+    get_layout_h(tab_panel_constraints.as_ref(), rect)
+}
 
 pub fn draw_tab_line(
     frame: &mut Frame, tab_headings: Vec<String>, active_tab: usize, rect: Rect
@@ -45,32 +73,12 @@ pub fn draw_tab_line(
 }
 
 pub fn draw_tab_content(frame: &mut Frame, tab: &mut Tab, rect: Rect) {
-    let mut tab_panel_constraints: Vec<Constraint> = Vec::with_capacity(2);
+    let panel_chunks = get_panel_chunks(&tab.panels, rect);
 
-    let total_panels = tab.panels.len();
-    let percent = (1.0f32/(total_panels as f32) * 100.0f32) as u16;
-
-    let mut last_increment = 0;
-
-    if percent * (total_panels as u16) != 100 {
-        last_increment = 100 - percent * (total_panels as u16);
-    }
-
-    for i in 0..total_panels {
-        if i == total_panels - 1 {
-            tab_panel_constraints.push(Constraint::Percentage(percent + last_increment));
-            continue;
-        }
-
-        tab_panel_constraints.push(Constraint::Percentage(percent));
-    }
-
-    let panel_chunks = get_layout_h(tab_panel_constraints.as_ref(), rect);
-
-    for i in 0..total_panels {
+    for (i, panel_chunk) in panel_chunks.iter().enumerate() {
         match tab.panels.get_mut(i) {
             Some(panel) => {
-                draw_panel_content(frame, panel, panel_chunks[i]);
+                draw_panel_content(frame, panel, *panel_chunk);
             }
 
             None => {}

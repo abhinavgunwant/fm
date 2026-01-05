@@ -18,9 +18,22 @@ pub struct Tab {
     pub current_panel: usize,
 }
 
+#[derive(Default)]
 pub enum BottomLineContent {
+    #[default]
     HelpText,
     RefreshedAt,
+}
+
+#[derive(Default, PartialEq)]
+pub enum UserInput {
+    #[default]
+    None,
+
+    // String - the name of the new directory, u16 - the cursor position
+    NewDirectory(String, u16),
+
+    Error(String),
 }
 
 pub struct State {
@@ -28,6 +41,9 @@ pub struct State {
     pub current_tab: usize,
     pub tabs: Vec<Tab>,
     pub bottom_line_content: BottomLineContent,
+
+    // Used when user's input is being taken (e.g. when entering new directory's name).
+    pub user_input: UserInput,
 }
 
 impl Panel {
@@ -87,7 +103,8 @@ impl State {
             show_help_menu: false,
             current_tab: 0,
             tabs,
-            bottom_line_content: BottomLineContent::HelpText,
+            bottom_line_content: BottomLineContent::default(),
+            user_input: UserInput::default(),
         }
     }
 }
